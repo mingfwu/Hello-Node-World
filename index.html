@@ -1,0 +1,130 @@
+<html>
+    <head>
+        <title>Test</title>
+        <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+        <script type="text/javascript" src="jqBarGraph.1.1.min.js"></script> 
+        <script src="/socket.io/socket.io.js"></script>
+        <script type="text/javascript">
+            function submitForm()
+            {
+                document.inputform.submit();
+            }
+        
+        </script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+
+                var socket = io.connect('http://localhost:8080');
+                var source ='';
+                var countTotal = 0;
+                var sourceArray = [];
+                var arrayOfData = [];
+                var arrayofIds = [];
+                var colours = ['#D2691E','#FF7F50','#6495ED','#FFF8DC','#DC143C','#00FFFF','#00008B','#008B8B','#B8860B','#A9A9A9','#006400','#BDB76B','#8B008B','#556B2F','#FF8C00','#9932CC','#8B0000','#E9967A','#8FBC8F','#483D8B','#2F4F4F','#00CED1','#9400D3','#FF1493','#00BFFF','#696969','#1E90FF','#B22222','#FFFAF0','#228B22','#FF00FF','#DCDCDC','#F8F8FF','#FFD700','#DAA520','#808080','#008000','#ADFF2F','#F0FFF0','#FF69B4','#CD5C5C','#4B0082','#FFFFF0','#F0E68C','#E6E6FA','#FFF0F5','#7CFC00','#FFFACD','#ADD8E6'];
+
+                socket.on('streamId', function(streamId) {
+                	var found = false;
+                    
+                    $.each(
+                    		arrayofIds,
+                        function( intIndex, objValue ){
+
+                            // Do we already have the data value?
+                            if(found == false && objValue[1] == streamId){
+                                
+                                // Increment the count value
+                                var currentVal = objValue[0];
+                                currentVal ++; 
+                                arrayofIds[intIndex][0] = currentVal;                                                         
+
+                                found = true;
+                            } 
+                        }
+                    );
+
+                	if (found == false) {
+                		arrayofIds.push([1,streamId]);
+                	}                
+                	
+                	$('#streamInfo').html('<br>');
+                	
+                	$.each(arrayofIds, function(intIndex, objValue) {
+                    	$('#streamInfo').append(objValue[1]+' : '+objValue[0]+'<br/>');
+                	})
+
+                	
+                });
+
+                socket.on('data', function (data) {
+
+                    source = data.source;
+                    countTotal ++; 
+
+                    var found = false;
+                    
+                    $.each(
+                        arrayOfData,
+                        function( intIndex, objValue ){
+
+                            // Do we already have the data value?
+                            if(found == false && objValue[1] == source){
+                                
+                                // Increment the count value
+                                var currentVal = objValue[0];
+                                currentVal ++; 
+                                arrayOfData[intIndex][0] = currentVal;                                
+                                
+                                // Set a colour as this has now shown up twice
+                                arrayOfData[intIndex][2] = colours[intIndex];
+
+                                found = true;
+                            } 
+                        }
+                    );
+
+                    // No record of this data so far, set defaults
+                    if (found == false){
+                        arrayOfData.push([1, source,'#333333']);
+                    }
+
+                    $('#divForGraph').html('');
+                    $('#countTotal').html(countTotal);
+
+                    
+                    // See http://www.workshop.rs/jqbargraph/
+                    $('#divForGraph').jqBarGraph({ 
+                        data: arrayOfData,
+                        animate: false,
+                        width: 1024,
+                        legend: true,
+                        legendWidth: 300
+                    }); 
+                });
+            });
+        </script>    
+        
+           
+        </head>
+    <body>
+		<p><b><i>Datasift Console Entry</i></b></p>
+		<form name="inputform" method="post" action="/input">
+		<table>
+		<tr>
+		<td>Username: </td><td><input type=TEXT NAME=username><br></td>
+		</tr>
+		<tr>
+		<td>API Key: </td><td><input type=TEXT NAME=apiKey value=''><br></td>
+		</tr>
+		<tr>
+		<td>Stream ID: </td><td><input type=TEXT NAME=streamId value=''><br></td>
+		</tr>
+		<tr><td></td><td><input type=button onclick="javascript:submitForm();" name=SUBMIT value="CONNECT"></form>		
+		<form name="disconnectform" method="post" action="/disconnect"><input type=submit name="DISCONNECT" value="DISCONNECT"></form></td></tr>
+		</table>
+		
+       <p><div id="divForGraph"></div></p>
+       <p>Total interactions: <span id="countTotal"></span></p>
+       <p>Stream counts: <span id="streamInfo"></span></p>
+       
+    </body>    
+</html>
